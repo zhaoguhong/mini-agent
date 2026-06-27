@@ -45,6 +45,14 @@ For syntax-only verification:
 - Prefer small, explicit modules over broad abstractions.
 - Keep tool behavior structured and safe by default.
 
+## Commenting Guidelines
+
+- Prefer docstrings for modules, classes, public functions, and important internal helpers.
+- Add comments for complex logic, key algorithms, safety decisions, and non-obvious design tradeoffs.
+- Keep comments concise, but allow multi-line docstrings when they explain why a design exists.
+- Do not comment simple assignments, obvious control flow, or self-explanatory code.
+- Inline comments should be rare and used only when a nearby explanation is clearer than a docstring.
+
 ## Tool And Skill Rules
 
 - Built-in tools are registered through `src/miniagent/tools`.

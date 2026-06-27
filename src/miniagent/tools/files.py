@@ -11,6 +11,8 @@ from miniagent.tools.base import ToolContext, ToolResult
 
 
 class ReadFileTool:
+    """Tool for reading workspace-scoped text files."""
+
     name = "read_file"
     description = "Read a UTF-8 text file inside the workspace."
     parameters_schema = {
@@ -21,6 +23,8 @@ class ReadFileTool:
     }
 
     def run(self, arguments: Dict[str, Any], context: ToolContext) -> ToolResult:
+        """Read a workspace-scoped text file with output truncation."""
+
         try:
             path = resolve_workspace_path(context.config.workspace_root, arguments["path"])
             text = path.read_text(encoding="utf-8")
@@ -32,6 +36,8 @@ class ReadFileTool:
 
 
 class WriteFileTool:
+    """Tool for creating or replacing workspace-scoped text files."""
+
     name = "write_file"
     description = "Create or overwrite a UTF-8 text file inside the workspace."
     parameters_schema = {
@@ -45,6 +51,8 @@ class WriteFileTool:
     }
 
     def run(self, arguments: Dict[str, Any], context: ToolContext) -> ToolResult:
+        """Create or overwrite a workspace file after confirmation when required."""
+
         try:
             path = resolve_workspace_path(context.config.workspace_root, arguments["path"])
             if context.config.file_write_confirmation and not _confirm(context, f"Write file {path}?"):
@@ -57,6 +65,13 @@ class WriteFileTool:
 
 
 class EditFileTool:
+    """Tool for exact, local text replacements in existing files.
+
+    This tool intentionally avoids line-number patches and fuzzy matching. The
+    model must provide the exact old text so edits are deterministic, reviewable,
+    and easy to reject when the target text is missing or ambiguous.
+    """
+
     name = "edit_file"
     description = "Replace an exact text segment in a UTF-8 file inside the workspace."
     parameters_schema = {
@@ -72,6 +87,13 @@ class EditFileTool:
     }
 
     def run(self, arguments: Dict[str, Any], context: ToolContext) -> ToolResult:
+        """Apply an exact text replacement without guessing edit locations.
+
+        Ambiguous single replacements are rejected instead of choosing the first
+        match. That forces the model to read more context or opt into
+        `replace_all`, which is safer for code and documentation edits.
+        """
+
         try:
             path = resolve_workspace_path(context.config.workspace_root, arguments["path"])
             if context.config.file_write_confirmation and not _confirm(context, f"Edit file {path}?"):
@@ -84,6 +106,7 @@ class EditFileTool:
             if count == 0:
                 return ToolResult(ok=False, content="", error="old_text was not found")
             if count > 1 and not replace_all:
+                # Ambiguous edits are rejected so the model must read more context.
                 return ToolResult(ok=False, content="", error=f"old_text matched {count} times; set replace_all=true or provide more context")
             updated = text.replace(old_text, new_text) if replace_all else text.replace(old_text, new_text, 1)
             path.write_text(updated, encoding="utf-8")
@@ -93,6 +116,8 @@ class EditFileTool:
 
 
 class SearchTextTool:
+    """Tool for text and regex search inside the workspace."""
+
     name = "search_text"
     description = "Search text or regex in workspace files."
     parameters_schema = {
@@ -108,6 +133,8 @@ class SearchTextTool:
     }
 
     def run(self, arguments: Dict[str, Any], context: ToolContext) -> ToolResult:
+        """Search readable text files under the workspace."""
+
         try:
             root = resolve_workspace_path(context.config.workspace_root, arguments.get("path", "."))
             query = arguments["query"]

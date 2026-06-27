@@ -7,6 +7,8 @@ from miniagent.tools.skill_tools import LoadSkillTool
 
 
 def create_builtin_registry(skill_repository=None) -> ToolRegistry:
+    """Create a registry containing all built-in tools."""
+
     registry = ToolRegistry()
     registry.register(ReadFileTool())
     registry.register(WriteFileTool())

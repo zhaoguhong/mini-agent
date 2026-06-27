@@ -10,6 +10,8 @@ from miniagent.tools.base import ToolContext, ToolResult
 
 
 class RunShellTool:
+    """Tool for synchronous workspace-scoped shell execution."""
+
     name = "run_shell"
     description = "Run a synchronous shell command inside the workspace with safety checks."
     parameters_schema = {
@@ -20,6 +22,8 @@ class RunShellTool:
     }
 
     def run(self, arguments: Dict[str, Any], context: ToolContext) -> ToolResult:
+        """Run one synchronous command under the configured workspace policy."""
+
         if not context.config.shell_enabled:
             return ToolResult(ok=False, content="", error="Shell tool is disabled")
         command = arguments["command"]

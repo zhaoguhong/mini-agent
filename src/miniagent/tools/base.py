@@ -26,6 +26,8 @@ class ToolResult:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_message_content(self, max_chars: int) -> str:
+        """Format a tool result for a Chat Completions tool message."""
+
         prefix = "OK" if self.ok else "ERROR"
         body = self.content if self.ok else (self.error or self.content)
         if len(body) > max_chars:
@@ -34,6 +36,8 @@ class ToolResult:
 
 
 class Tool(Protocol):
+    """Protocol implemented by built-in and MCP-backed tools."""
+
     name: str
     description: str
     parameters_schema: Dict[str, Any]

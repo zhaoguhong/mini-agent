@@ -10,12 +10,16 @@ from miniagent.storage.paths import ensure_dir
 
 
 def append_jsonl(path: Path, item: dict[str, Any]) -> None:
+    """Append one JSON object as a line."""
+
     ensure_dir(path.parent)
     with path.open("a", encoding="utf-8") as file:
         file.write(json.dumps(item, ensure_ascii=False) + "\n")
 
 
 def read_jsonl(path: Path) -> Iterable[dict[str, Any]]:
+    """Read JSONL objects from a file if it exists."""
+
     if not path.exists():
         return []
     rows = []
@@ -24,4 +28,3 @@ def read_jsonl(path: Path) -> Iterable[dict[str, Any]]:
             if line.strip():
                 rows.append(json.loads(line))
     return rows
-

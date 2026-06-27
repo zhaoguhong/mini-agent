@@ -23,6 +23,8 @@ class OpenAIChatClient:
         self._config = config
 
     def complete(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> ChatResponse:
+        """Create one non-streaming Chat Completions response."""
+
         kwargs: Dict[str, Any] = {
             "model": self._config.model,
             "messages": messages,
@@ -37,6 +39,8 @@ class OpenAIChatClient:
         return ChatResponse(message=_message_to_dict(message))
 
     def stream(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]) -> Iterable[StreamDelta]:
+        """Yield normalized streaming deltas from Chat Completions."""
+
         kwargs: Dict[str, Any] = {
             "model": self._config.model,
             "messages": messages,
@@ -55,6 +59,8 @@ class OpenAIChatClient:
 
 
 def _message_to_dict(message: Any) -> Dict[str, Any]:
+    """Convert SDK message objects into plain dictionaries for the agent."""
+
     if isinstance(message, dict):
         return message
     result: Dict[str, Any] = {"role": getattr(message, "role", "assistant")}
@@ -68,6 +74,8 @@ def _message_to_dict(message: Any) -> Dict[str, Any]:
 
 
 def _tool_calls_to_dicts(tool_calls: Any) -> Optional[List[Dict[str, Any]]]:
+    """Convert SDK tool-call objects into Chat Completions dictionaries."""
+
     if not tool_calls:
         return None
     converted = []

@@ -17,13 +17,20 @@ FRONT_MATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.DOTALL)
 
 
 class SkillRepository:
-    """Discovers and loads local skills."""
+    """Discovers and loads local skills.
+
+    Only skill metadata needed for routing is kept in the default index. Full
+    instructions and reference files stay behind `load_skill`, which keeps the
+    base prompt compact and makes skill activation visible in the transcript.
+    """
 
     def __init__(self, skills_dir: Path) -> None:
         self.skills_dir = skills_dir
         self._skills: Dict[str, Skill] = {}
 
     def discover(self) -> None:
+        """Scan the skills directory and refresh the in-memory index."""
+
         self._skills = {}
         if not self.skills_dir.exists():
             return
@@ -32,15 +39,26 @@ class SkillRepository:
             self._skills[skill.name] = skill
 
     def index(self) -> List[SkillIndexItem]:
+        """Return the minimal skill index exposed to the model."""
+
         return [self._skills[name].index_item() for name in sorted(self._skills)]
 
     def get(self, name: str) -> Skill:
+        """Return a discovered skill by name."""
+
         try:
             return self._skills[name]
         except KeyError as exc:
             raise KeyError(f"Unknown skill: {name}") from exc
 
     def load_reference(self, name: str, reference: str) -> str:
+        """Load a declared reference file from inside a skill directory.
+
+        References must be listed by the skill and must resolve under that
+        skill's root directory. This prevents a skill from using references as a
+        path traversal mechanism.
+        """
+
         skill = self.get(name)
         if reference not in skill.references:
             raise ValueError(f"Reference is not declared by skill: {reference}")
@@ -70,6 +88,8 @@ class SkillRepository:
 
 
 def _split_front_matter(raw: str) -> Tuple[Dict[str, Any], str]:
+    """Split optional front matter from markdown body."""
+
     match = FRONT_MATTER_RE.match(raw)
     if not match:
         return {}, raw
@@ -77,7 +97,12 @@ def _split_front_matter(raw: str) -> Tuple[Dict[str, Any], str]:
 
 
 def _parse_simple_yaml(raw: str) -> Dict[str, Any]:
-    """Parse the small YAML subset used by SKILL.md metadata."""
+    """Parse the small YAML subset used by SKILL.md metadata.
+
+    The project only needs scalar fields and simple lists, so this parser keeps
+    skill loading dependency-free. If SKILL.md metadata grows more complex, this
+    should be replaced with a real YAML parser instead of expanding ad hoc rules.
+    """
 
     result: Dict[str, Any] = {}
     current_list: Optional[str] = None
@@ -101,6 +126,8 @@ def _parse_simple_yaml(raw: str) -> Dict[str, Any]:
 
 
 def _list(value: Any) -> List[str]:
+    """Normalize scalar or list metadata into a list of strings."""
+
     if not value:
         return []
     if isinstance(value, list):

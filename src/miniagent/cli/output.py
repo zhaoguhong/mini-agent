@@ -17,18 +17,24 @@ class Console:
             self._rich = RichConsole()
 
     def print(self, *args, **kwargs) -> None:
+        """Print text using Rich when it is installed."""
+
         if self._rich:
             self._rich.print(*args, **kwargs)
         else:
             print(*args)
 
     def write(self, text: str) -> None:
+        """Write streaming text without adding a newline."""
+
         if self._rich:
             self._rich.print(text, end="")
         else:
             print(text, end="", flush=True)
 
     def confirm(self, prompt: str) -> bool:
+        """Ask the user to confirm a potentially unsafe action."""
+
         if self._rich:
             from rich.prompt import Confirm
 
@@ -37,6 +43,8 @@ class Console:
         return answer.strip().lower() in {"y", "yes"}
 
     def table(self, title: str, columns: Iterable[str], rows: Iterable[Iterable[str]]) -> None:
+        """Render a small table with a plain-text fallback."""
+
         if self._rich:
             from rich.table import Table
 
@@ -51,4 +59,3 @@ class Console:
         self.print(" | ".join(columns))
         for row in rows:
             self.print(" | ".join(str(item) for item in row))
-

@@ -16,6 +16,8 @@ class PersistentMemory:
         self.memory_dir = memory_dir
 
     def load_summary(self) -> str:
+        """Load persistent facts and preferences as prompt-ready text."""
+
         facts = self._load_json("facts.json")
         preferences = self._load_json("preferences.json")
         parts = []
@@ -32,6 +34,7 @@ class PersistentMemory:
         return json.loads(path.read_text(encoding="utf-8"))
 
     def save_json(self, name: str, data: Dict[str, Any]) -> None:
+        """Write one persistent memory JSON file."""
+
         ensure_dir(self.memory_dir)
         (self.memory_dir / name).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-

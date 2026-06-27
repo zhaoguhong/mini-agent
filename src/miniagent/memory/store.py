@@ -17,6 +17,8 @@ class SessionStore:
         self.sessions_dir = sessions_dir
 
     def save(self, messages: List[Dict[str, Any]], session_id: Optional[str] = None) -> str:
+        """Save a session and return its session id."""
+
         ensure_dir(self.sessions_dir)
         active_id = session_id or str(uuid.uuid4())
         path = self.sessions_dir / f"{active_id}.jsonl"
@@ -25,4 +27,6 @@ class SessionStore:
         return active_id
 
     def load(self, session_id: str) -> List[Dict[str, Any]]:
+        """Load a saved session by id."""
+
         return list(read_jsonl(self.sessions_dir / f"{session_id}.jsonl"))

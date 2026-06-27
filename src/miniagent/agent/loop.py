@@ -16,7 +16,13 @@ StreamCallback = Callable[[str], None]
 
 
 class Agent:
-    """A minimal but complete Chat Completions agent loop."""
+    """A minimal but complete Chat Completions agent loop.
+
+    The loop owns orchestration only: it builds messages, asks the model for the
+    next step, executes requested tools, and feeds tool results back to the
+    model. Tool implementations, persistence, and provider details stay behind
+    their own interfaces so the learning surface remains small.
+    """
 
     def __init__(
         self,
@@ -29,6 +35,14 @@ class Agent:
         self.skill_repository = skill_repository
 
     def run(self, user_input: str, on_delta: Optional[StreamCallback] = None) -> str:
+        """Run one user turn until a final assistant message is produced.
+
+        A turn may require multiple model calls when the assistant requests
+        tools. Each assistant tool-call message and each tool result is appended
+        to both the temporary request context and session memory so later turns
+        can see the same reasoning trail.
+        """
+
         self.runtime.memory.add({"role": "user", "content": user_input})
         messages = self._build_messages()
         final_text = ""
@@ -57,6 +71,13 @@ class Agent:
         return final_text
 
     def _build_messages(self) -> List[Dict[str, Any]]:
+        """Build the model-visible context for the current turn.
+
+        Skills use progressive disclosure: only the minimal skill index is
+        injected here. The model must call `load_skill` before the longer skill
+        instructions or reference files enter the context.
+        """
+
         system_parts = [_default_system_prompt()]
         persistent = PersistentMemory(self.runtime.config.memory_dir).load_summary()
         if persistent:
@@ -71,12 +92,22 @@ class Agent:
         return [{"role": "system", "content": "\n\n".join(system_parts)}] + self.runtime.memory.snapshot()
 
     def _call_llm(self, messages: List[Dict[str, Any]], on_delta: Optional[StreamCallback]) -> ChatResponse:
+        """Dispatch to streaming or non-streaming Chat Completions."""
+
         tools = self.runtime.tools.schemas()
         if not self.runtime.config.stream:
             return self.llm.complete(messages, tools)
         return self._collect_stream(messages, tools, on_delta)
 
     def _collect_stream(self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]], on_delta: Optional[StreamCallback]) -> ChatResponse:
+        """Normalize streaming deltas into a single assistant message.
+
+        Chat Completions streams text and tool-call arguments as partial deltas.
+        The agent can display text immediately, but tool calls must be rebuilt
+        into one complete assistant message before JSON arguments can be parsed
+        and executed safely.
+        """
+
         content_parts: List[str] = []
         tool_calls: Dict[int, Dict[str, Any]] = {}
         for delta in self.llm.stream(messages, tools):
@@ -92,6 +123,8 @@ class Agent:
                 if call.get("id"):
                     existing["id"] = call.get("id")
                 function = call.get("function") or {}
+                # Streaming tool calls arrive in fragments, so name and arguments
+                # are appended until the final assistant message can be rebuilt.
                 if function.get("name"):
                     existing["function"]["name"] += function.get("name") or ""
                 if function.get("arguments"):
@@ -102,6 +135,8 @@ class Agent:
         return ChatResponse(message=message)
 
     def _execute_tool_call(self, call: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute one Chat Completions tool call and return a tool message."""
+
         function = call.get("function") or {}
         name = function.get("name")
         raw_args = function.get("arguments") or "{}"
@@ -122,6 +157,13 @@ class Agent:
         return {"role": "tool", "tool_call_id": call.get("id"), "content": content}
 
     def _run_tool_with_timeout(self, tool: Any, arguments: Dict[str, Any], timeout: int):
+        """Run synchronous tools behind a timeout without changing the Tool API.
+
+        Tools are intentionally simple synchronous callables. The agent wraps
+        them in a worker thread to enforce per-tool timeouts while keeping the
+        public Tool interface easy to implement and test.
+        """
+
         context = ToolContext(config=self.runtime.config, extras=self.runtime.extras)
         executor = ThreadPoolExecutor(max_workers=1)
         future = executor.submit(tool.run, arguments, context)
@@ -134,6 +176,13 @@ class Agent:
             executor.shutdown(wait=False, cancel_futures=True)
 
     def _tool_timeout(self, name: str) -> int:
+        """Pick the timeout policy for built-in, shell, and MCP tools.
+
+        Shell commands enforce their own subprocess timeout, so the outer agent
+        timeout is slightly larger to let the shell tool return a structured
+        timeout error instead of being interrupted first.
+        """
+
         if name == "run_shell":
             return self.runtime.config.shell_timeout + 1
         if name.startswith("mcp__"):
@@ -142,6 +191,8 @@ class Agent:
 
 
 def _assistant_tool_message(message: Dict[str, Any]) -> Dict[str, Any]:
+    """Preserve assistant tool-call messages in Chat Completions format."""
+
     result = {"role": "assistant", "content": message.get("content")}
     if message.get("tool_calls"):
         result["tool_calls"] = message["tool_calls"]

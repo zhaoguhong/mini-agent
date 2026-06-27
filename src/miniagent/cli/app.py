@@ -11,6 +11,8 @@ from miniagent.logging import configure_logging
 
 
 def _load_typer():
+    """Import Typer lazily to produce a helpful installation error."""
+
     try:
         import typer
     except ModuleNotFoundError as exc:
@@ -40,6 +42,8 @@ def _agent_from_options(
     stream: Optional[bool],
     workspace: Optional[Path],
 ):
+    """Build an agent and console from shared CLI options."""
+
     from miniagent.cli.output import Console
 
     console = Console()
@@ -181,4 +185,6 @@ def memory_clear(config: Optional[Path] = typer.Option(None, "--config")) -> Non
 
 
 def main() -> None:
+    """Run the Typer application."""
+
     app()

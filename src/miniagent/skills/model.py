@@ -28,6 +28,8 @@ class Skill:
     source_path: Path
 
     def index_item(self) -> SkillIndexItem:
+        """Return the minimal model-visible representation."""
+
         return SkillIndexItem(name=self.name, description=self.description)
 
 
@@ -36,4 +38,3 @@ class SkillState:
     """Tracks skills loaded during a conversation."""
 
     loaded_names: set[str] = field(default_factory=set)
-

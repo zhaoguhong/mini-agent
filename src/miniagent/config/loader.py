@@ -11,6 +11,8 @@ from miniagent.config.schema import AgentConfig, McpServerConfig
 
 
 def _load_toml(path: Path) -> Dict[str, Any]:
+    """Read a TOML file when it exists."""
+
     if not path.exists():
         return {}
     try:
@@ -37,6 +39,8 @@ def _path(value: Any) -> Path:
 
 
 def _env_values(env: Mapping[str, str]) -> Dict[str, Any]:
+    """Translate supported environment variables into config field names."""
+
     mapping = {
         "MINIAGENT_API_KEY": "api_key",
         "MINIAGENT_MODEL": "model",
@@ -87,6 +91,8 @@ def _env_values(env: Mapping[str, str]) -> Dict[str, Any]:
 
 
 def _normalize_values(values: Dict[str, Any]) -> Dict[str, Any]:
+    """Coerce raw config values into the types used by AgentConfig."""
+
     normalized = dict(values)
     for key in ["workspace_root", "memory_dir", "sessions_dir", "skills_dir", "mcp_config_path"]:
         if key in normalized and normalized[key] is not None:
@@ -142,4 +148,3 @@ def load_config(
     if config.mcp_enabled:
         config = config.with_updates(mcp_servers=load_mcp_servers(config.mcp_config_path))
     return config
-

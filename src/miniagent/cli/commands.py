@@ -10,6 +10,8 @@ from miniagent.agent.loop import Agent
 
 @dataclass
 class CommandResult:
+    """Outcome of handling one slash command."""
+
     handled: bool
     exit_requested: bool = False
 
