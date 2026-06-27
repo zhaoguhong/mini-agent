@@ -25,6 +25,7 @@ class AgentConfig:
     api_key: Optional[str] = None
     model: Optional[str] = None
     base_url: Optional[str] = None
+    default_language: str = "zh-CN"
     stream: bool = True
     temperature: float = 0.2
     max_iterations: int = 8
@@ -36,7 +37,7 @@ class AgentConfig:
     tool_timeout: int = 30
     shell_timeout: int = 60
     shell_enabled: bool = True
-    require_shell_confirmation: bool = True
+    require_shell_confirmation: bool = False
     file_write_confirmation: bool = True
     max_tool_output_chars: int = 20000
     max_file_read_chars: int = 200000
@@ -62,4 +63,3 @@ class AgentConfig:
         """Return a copy with selected fields updated."""
 
         return replace(self, **updates)
-

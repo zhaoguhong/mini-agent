@@ -25,7 +25,10 @@ def handle_slash_command(text: str, agent: Agent, console) -> CommandResult:
     if command in {"/exit", "/quit"}:
         return CommandResult(handled=True, exit_requested=True)
     if command == "/help":
-        console.print("/help /exit /clear /model /model <name> /config /tools /skills /mcp /memory /save /new /stream on|off")
+        console.print(
+            "/help /exit /clear /model /model <name> /language /language <code> "
+            "/config /tools /skills /mcp /memory /save /new /stream on|off"
+        )
         return CommandResult(handled=True)
     if command == "/clear":
         agent.runtime.memory.clear()
@@ -45,11 +48,17 @@ def handle_slash_command(text: str, agent: Agent, console) -> CommandResult:
             agent.runtime.config = agent.runtime.config.with_updates(stream=args[0] == "on")
         console.print(f"Stream: {agent.runtime.config.stream}")
         return CommandResult(handled=True)
+    if command == "/language":
+        if args:
+            agent.runtime.config = agent.runtime.config.with_updates(default_language=args[0])
+        console.print(f"Default language: {agent.runtime.config.default_language}")
+        return CommandResult(handled=True)
     if command == "/config":
         config = agent.runtime.config
         rows = [
             ("model", config.model or ""),
             ("base_url", config.base_url or "OpenAI default"),
+            ("default_language", config.default_language),
             ("stream", str(config.stream)),
             ("workspace_root", str(config.workspace_root)),
             ("skills_dir", str(config.skills_dir)),

@@ -39,6 +39,7 @@ def _agent_from_options(
     api_key: Optional[str],
     base_url: Optional[str],
     model: Optional[str],
+    language: Optional[str],
     stream: Optional[bool],
     workspace: Optional[Path],
 ):
@@ -53,6 +54,7 @@ def _agent_from_options(
             "api_key": api_key,
             "base_url": base_url,
             "model": model,
+            "default_language": language,
             "stream": stream,
             "workspace_root": workspace,
         },
@@ -68,6 +70,7 @@ def chat(
     api_key: Optional[str] = typer.Option(None, "--api-key", help="API key. Prefer env var for real use."),
     base_url: Optional[str] = typer.Option(None, "--base-url", help="OpenAI-compatible base URL."),
     model: Optional[str] = typer.Option(None, "--model", help="Chat Completions model name."),
+    language: Optional[str] = typer.Option(None, "--language", help="Default response language, such as zh-CN or en."),
     stream: Optional[bool] = typer.Option(None, "--stream/--no-stream", help="Enable streaming output."),
     workspace: Optional[Path] = typer.Option(None, "--workspace", help="Workspace root."),
 ) -> None:
@@ -77,7 +80,7 @@ def chat(
         return
     from miniagent.cli.repl import run_repl
 
-    agent, console = _agent_from_options(config, api_key, base_url, model, stream, workspace)
+    agent, console = _agent_from_options(config, api_key, base_url, model, language, stream, workspace)
     run_repl(agent, console)
 
 
@@ -88,12 +91,13 @@ def run(
     api_key: Optional[str] = typer.Option(None, "--api-key"),
     base_url: Optional[str] = typer.Option(None, "--base-url"),
     model: Optional[str] = typer.Option(None, "--model"),
+    language: Optional[str] = typer.Option(None, "--language"),
     stream: Optional[bool] = typer.Option(None, "--stream/--no-stream"),
     workspace: Optional[Path] = typer.Option(None, "--workspace"),
 ) -> None:
     """Run one task and exit."""
 
-    agent, console = _agent_from_options(config, api_key, base_url, model, stream, workspace)
+    agent, console = _agent_from_options(config, api_key, base_url, model, language, stream, workspace)
     text = agent.run(task, on_delta=console.write if agent.runtime.config.stream else None)
     if agent.runtime.config.stream:
         console.print("")

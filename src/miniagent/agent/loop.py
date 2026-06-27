@@ -78,7 +78,7 @@ class Agent:
         instructions or reference files enter the context.
         """
 
-        system_parts = [_default_system_prompt()]
+        system_parts = [_default_system_prompt(), _language_instruction(self.runtime.config.default_language)]
         persistent = PersistentMemory(self.runtime.config.memory_dir).load_summary()
         if persistent:
             system_parts.append("Persistent memory:\n" + persistent)
@@ -204,4 +204,14 @@ def _default_system_prompt() -> str:
         "You are mini-agent, a command-line learning agent. "
         "Use tools when they help. Keep file and shell actions scoped to the workspace. "
         "If a skill looks relevant, call load_skill before applying it."
+    )
+
+
+def _language_instruction(language: str) -> str:
+    """Build the default response language instruction for the model."""
+
+    return (
+        f"Default response language: {language}. "
+        "Follow the user's explicit language request when present. "
+        "Keep code, commands, file paths, identifiers, and quoted tool output unchanged unless translation is requested."
     )

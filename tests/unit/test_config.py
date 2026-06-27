@@ -14,6 +14,7 @@ class ConfigTests(unittest.TestCase):
                 env={
                     "MINIAGENT_API_KEY": "key",
                     "MINIAGENT_MODEL": "model",
+                    "MINIAGENT_DEFAULT_LANGUAGE": "en",
                     "MINIAGENT_STREAM": "false",
                     "MINIAGENT_WORKSPACE": str(tmp_path),
                 },
@@ -21,6 +22,7 @@ class ConfigTests(unittest.TestCase):
 
             self.assertEqual(config.api_key, "key")
             self.assertEqual(config.model, "model")
+            self.assertEqual(config.default_language, "en")
             self.assertFalse(config.stream)
             self.assertEqual(config.workspace_root, Path(tmp_path))
 

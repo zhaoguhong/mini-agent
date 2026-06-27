@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shlex
 import subprocess
 from typing import Any, Dict, Optional
@@ -10,7 +11,13 @@ from miniagent.tools.base import ToolContext, ToolResult
 
 
 class RunShellTool:
-    """Tool for synchronous workspace-scoped shell execution."""
+    """Tool for synchronous workspace-scoped shell execution.
+
+    Most read-only commands should run without interruption. Commands that are
+    destructive, change repository state, install software, or commonly write
+    files require explicit confirmation, while clearly dangerous commands are
+    denied before any prompt is shown.
+    """
 
     name = "run_shell"
     description = "Run a synchronous shell command inside the workspace with safety checks."
@@ -30,7 +37,9 @@ class RunShellTool:
         denied = _deny_reason(command)
         if denied:
             return ToolResult(ok=False, content="", error=denied)
-        if context.config.require_shell_confirmation and not _confirm(context, f"Run shell command: {command}?"):
+        if _requires_confirmation(command, context.config.require_shell_confirmation) and not _confirm(
+            context, f"Run sensitive shell command: {command}?"
+        ):
             return ToolResult(ok=False, content="", error="Shell command denied")
         try:
             completed = subprocess.run(
@@ -78,6 +87,89 @@ def _deny_reason(command: str) -> Optional[str]:
     if tokens and tokens[0] in {"sudo"}:
         return "Command denied by safety policy"
     return None
+
+
+def _requires_confirmation(command: str, confirm_all: bool) -> bool:
+    """Return whether a command should pause for user approval.
+
+    This is a deliberately conservative string policy. It is not meant to prove
+    a command safe; it only keeps common read-only commands smooth while putting
+    obvious write, install, network-script, and VCS state changes behind a
+    human confirmation step.
+    """
+
+    if confirm_all:
+        return True
+    lowered = command.lower()
+    sensitive_fragments = [
+        ">",
+        ">>",
+        "<<",
+        "| sh",
+        "| bash",
+        "curl ",
+        "wget ",
+        "pip install",
+        "python -m pip install",
+        "npm install",
+        "pnpm install",
+        "yarn add",
+        "brew install",
+        "git add",
+        "git commit",
+        "git push",
+        "git pull",
+        "git merge",
+        "git rebase",
+        "git checkout",
+        "git switch",
+        "git restore",
+        "git clean",
+    ]
+    if any(fragment in lowered for fragment in sensitive_fragments):
+        return True
+
+    writable_commands = {
+        "rm",
+        "rmdir",
+        "mv",
+        "cp",
+        "mkdir",
+        "touch",
+        "chmod",
+        "chown",
+        "ln",
+        "tee",
+        "sed",
+        "perl",
+    }
+    for tokens in _command_segments(command):
+        if not tokens:
+            continue
+        command_name = tokens[0].rsplit("/", 1)[-1]
+        if command_name == "__parse_error__":
+            return True
+        if command_name in {"sed", "perl"}:
+            if any(token in {"-i", "-pi"} or token.startswith("-i") for token in tokens[1:]):
+                return True
+            continue
+        if command_name in {"python", "python3"} and tokens[1:4] == ["-m", "pip", "install"]:
+            return True
+        if command_name in writable_commands:
+            return True
+    return False
+
+
+def _command_segments(command: str) -> list[list[str]]:
+    """Split common shell command chains into executable segments."""
+
+    segments: list[list[str]] = []
+    for raw_segment in re.split(r"\s*(?:&&|\|\||;|\|)\s*", command):
+        try:
+            segments.append(shlex.split(raw_segment))
+        except ValueError:
+            return [["__parse_error__"]]
+    return segments
 
 
 def _confirm(context: ToolContext, prompt: str) -> bool:

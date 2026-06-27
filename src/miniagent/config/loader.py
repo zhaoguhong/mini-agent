@@ -45,6 +45,7 @@ def _env_values(env: Mapping[str, str]) -> Dict[str, Any]:
         "MINIAGENT_API_KEY": "api_key",
         "MINIAGENT_MODEL": "model",
         "MINIAGENT_BASE_URL": "base_url",
+        "MINIAGENT_DEFAULT_LANGUAGE": "default_language",
         "MINIAGENT_LOG_LEVEL": "log_level",
     }
     values: Dict[str, Any] = {}

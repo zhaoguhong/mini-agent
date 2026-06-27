@@ -11,7 +11,11 @@ from miniagent.tools.base import ToolResult
 
 
 class FakeLlm:
+    def __init__(self):
+        self.messages = []
+
     def complete(self, messages, tools):
+        self.messages = messages
         return type("Response", (), {"message": {"role": "assistant", "content": "hello"}})()
 
 
@@ -57,12 +61,25 @@ class AgentLoopTests(unittest.TestCase):
             tmp_path = Path(raw)
             config = AgentConfig(api_key="key", model="model", workspace_root=tmp_path, stream=False)
             runtime = AgentRuntime(config=config, memory=SessionMemory(), tools=ToolRegistry())
-            agent = Agent(runtime=runtime, llm_client=FakeLlm())
+            llm = FakeLlm()
+            agent = Agent(runtime=runtime, llm_client=llm)
 
             result = agent.run("hi")
 
             self.assertEqual(result, "hello")
             self.assertEqual(runtime.memory.messages[-1]["content"], "hello")
+
+    def test_agent_includes_default_language_instruction(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            config = AgentConfig(api_key="key", model="model", workspace_root=tmp_path, stream=False, default_language="en")
+            runtime = AgentRuntime(config=config, memory=SessionMemory(), tools=ToolRegistry())
+            llm = FakeLlm()
+            agent = Agent(runtime=runtime, llm_client=llm)
+
+            agent.run("hi")
+
+            self.assertIn("Default response language: en.", llm.messages[0]["content"])
 
     def test_agent_executes_tool_call(self):
         with tempfile.TemporaryDirectory() as raw:

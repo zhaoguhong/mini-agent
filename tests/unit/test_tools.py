@@ -53,12 +53,61 @@ class ToolTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             tmp_path = Path(raw)
             tool = RunShellTool()
-            config = AgentConfig(workspace_root=tmp_path, require_shell_confirmation=False)
+            config = AgentConfig(workspace_root=tmp_path)
 
             result = tool.run({"command": "rm -rf /"}, ToolContext(config=config))
 
             self.assertFalse(result.ok)
             self.assertIn("denied", result.error.lower())
+
+    def test_shell_runs_safe_command_without_confirmation(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            tool = RunShellTool()
+            config = AgentConfig(workspace_root=tmp_path)
+
+            result = tool.run({"command": "echo hello"}, ToolContext(config=config))
+
+            self.assertTrue(result.ok)
+            self.assertEqual(result.content, "hello")
+
+    def test_shell_requires_confirmation_for_sensitive_command(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            tool = RunShellTool()
+            config = AgentConfig(workspace_root=tmp_path)
+
+            result = tool.run({"command": "touch note.txt"}, ToolContext(config=config))
+
+            self.assertFalse(result.ok)
+            self.assertIn("denied", result.error.lower())
+            self.assertFalse((tmp_path / "note.txt").exists())
+
+    def test_shell_requires_confirmation_for_chained_sensitive_command(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            tool = RunShellTool()
+            config = AgentConfig(workspace_root=tmp_path)
+
+            result = tool.run({"command": "echo hello; touch note.txt"}, ToolContext(config=config))
+
+            self.assertFalse(result.ok)
+            self.assertIn("denied", result.error.lower())
+            self.assertFalse((tmp_path / "note.txt").exists())
+
+    def test_shell_runs_sensitive_command_after_confirmation(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            tool = RunShellTool()
+            config = AgentConfig(workspace_root=tmp_path)
+
+            result = tool.run(
+                {"command": "touch note.txt"},
+                ToolContext(config=config, extras={"confirm": lambda prompt: True}),
+            )
+
+            self.assertTrue(result.ok)
+            self.assertTrue((tmp_path / "note.txt").exists())
 
 
 if __name__ == "__main__":

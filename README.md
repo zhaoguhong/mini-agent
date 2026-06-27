@@ -64,6 +64,7 @@ CLI 参数 > 环境变量 > 配置文件 > 默认值
 | 配置项 | 环境变量 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `base_url` | `MINIAGENT_BASE_URL` | OpenAI SDK 默认值 | OpenAI 兼容 API 地址 |
+| `default_language` | `MINIAGENT_DEFAULT_LANGUAGE` | `zh-CN` | 默认回答语言 |
 | `stream` | `MINIAGENT_STREAM` | `true` | 是否默认流式输出 |
 | `temperature` | `MINIAGENT_TEMPERATURE` | `0.2` | 采样温度 |
 | `max_iterations` | `MINIAGENT_MAX_ITERATIONS` | `8` | 单次请求最大 Agent Loop 次数 |
@@ -71,6 +72,7 @@ CLI 参数 > 环境变量 > 配置文件 > 默认值
 | `skills_dir` | `MINIAGENT_SKILLS_DIR` | `./skills` | Skill 目录 |
 | `tool_timeout` | `MINIAGENT_TOOL_TIMEOUT` | `30` | 普通工具超时，单位秒 |
 | `shell_timeout` | `MINIAGENT_SHELL_TIMEOUT` | `60` | Shell 工具超时，单位秒 |
+| `require_shell_confirmation` | `MINIAGENT_REQUIRE_SHELL_CONFIRMATION` | `false` | 是否所有 Shell 命令都需要确认；默认仅敏感命令确认 |
 | `mcp_enabled` | `MINIAGENT_MCP_ENABLED` | `false` | 是否启用 MCP |
 | `mcp_config_path` | `MINIAGENT_MCP_CONFIG` | `~/.miniagent/mcp.json` | MCP 配置文件 |
 
@@ -81,6 +83,7 @@ export MINIAGENT_BASE_URL="https://api.deepseek.com"
 export MINIAGENT_MODEL="deepseek-v4-pro"
 export MINIAGENT_API_KEY="..."
 miniagent
+miniagent --language en
 ```
 
 不要把真实 API key 写入仓库。
@@ -116,6 +119,8 @@ miniagent mcp list
 /clear
 /model
 /model <name>
+/language
+/language <code>
 /config
 /tools
 /skills
@@ -141,6 +146,8 @@ miniagent mcp list
 
 流式模式下，普通文本会边生成边输出；流式 tool calls 会先累积完整参数，再执行工具。
 
+默认回答语言由 `default_language` 控制，默认是 `zh-CN`。模型会优先遵循用户在当前消息中的明确语言要求；代码、命令、文件路径和工具输出默认保持原样。
+
 ## Tool 加载逻辑
 
 内置工具数量较少，默认全部注册并暴露给模型：
@@ -156,7 +163,7 @@ miniagent mcp list
 
 不提供 `list_files`。文件探索通过 `search_text` 和受限 `run_shell` 完成。
 
-写文件、编辑文件和 Shell 命令默认需要确认。没有确认回调时，工具默认拒绝高风险动作。
+写文件和编辑文件默认需要确认。Shell 工具默认允许常见只读命令直接执行；会修改文件、改变 Git 状态、安装依赖、执行网络脚本等敏感命令需要确认；明显危险的命令会直接拒绝。没有确认回调时，敏感 Shell 命令默认拒绝。
 
 ## Skill 加载逻辑
 
