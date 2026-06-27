@@ -1,0 +1,135 @@
+# mini-agent
+
+`mini-agent` is a small Python command-line project for learning how agents work. The main command is `miniagent`; running it without subcommands starts an interactive chat session.
+
+The project uses the official OpenAI Python SDK with the Chat Completions `/v1/chat/completions` protocol only. It does not use the Responses API, LangChain, AutoGen, or another agent framework.
+
+## Features
+
+- Official OpenAI Python SDK.
+- Chat Completions only.
+- OpenAI-compatible providers such as DeepSeek.
+- Streaming and non-streaming responses.
+- Claude-Code-style slash commands.
+- Session and persistent memory.
+- Built-in tools for file reading, file writing, exact file edits, text search, synchronous shell commands, and skill loading.
+- Local skills from `skills/*/SKILL.md`.
+- Configurable stdio MCP servers.
+
+## Install
+
+Python 3.10+ is required. If the system Python is older, install Python 3.12 before creating the virtual environment.
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+## Main Dependencies
+
+| Package | Purpose |
+| --- | --- |
+| `openai` | Official SDK for Chat Completions |
+| `typer` | CLI commands and options |
+| `rich` | Terminal output, tables, and confirmations |
+| `mcp` | stdio MCP server integration |
+| `tomli` | TOML reading on Python 3.10 |
+
+The Agent Loop, Tool Registry, built-in tools, memory, skill loading, and skill reference parsing are implemented by this project.
+
+## Configure
+
+Precedence:
+
+```text
+CLI args > environment variables > config file > defaults
+```
+
+Default config file:
+
+```text
+~/.miniagent/config.toml
+```
+
+Required config:
+
+| Key | Env var | Default | Description |
+| --- | --- | --- | --- |
+| `api_key` | `MINIAGENT_API_KEY` | none | API key |
+| `model` | `MINIAGENT_MODEL` | none | Chat Completions model name |
+
+Common optional config:
+
+| Key | Env var | Default | Description |
+| --- | --- | --- | --- |
+| `base_url` | `MINIAGENT_BASE_URL` | OpenAI SDK default | OpenAI-compatible base URL |
+| `stream` | `MINIAGENT_STREAM` | `true` | Stream output by default |
+| `temperature` | `MINIAGENT_TEMPERATURE` | `0.2` | Sampling temperature |
+| `max_iterations` | `MINIAGENT_MAX_ITERATIONS` | `8` | Max loop iterations per task |
+| `workspace_root` | `MINIAGENT_WORKSPACE` | current directory | Tool workspace |
+| `skills_dir` | `MINIAGENT_SKILLS_DIR` | `./skills` | Skill directory |
+| `tool_timeout` | `MINIAGENT_TOOL_TIMEOUT` | `30` | General tool timeout in seconds |
+| `shell_timeout` | `MINIAGENT_SHELL_TIMEOUT` | `60` | Shell timeout in seconds |
+| `mcp_enabled` | `MINIAGENT_MCP_ENABLED` | `false` | Enable MCP tools |
+| `mcp_config_path` | `MINIAGENT_MCP_CONFIG` | `~/.miniagent/mcp.json` | MCP config path |
+
+## Usage
+
+```bash
+miniagent
+miniagent run "Explain this project"
+miniagent config show
+miniagent tools list
+miniagent skills list
+miniagent mcp list
+```
+
+Interactive slash commands:
+
+```text
+/help
+/exit
+/clear
+/model
+/model <name>
+/config
+/tools
+/skills
+/mcp
+/memory
+/save
+/new
+/stream on
+/stream off
+```
+
+## Tools
+
+Built-in tools are small enough to be registered and exposed by default:
+
+| Tool | Purpose |
+| --- | --- |
+| `read_file` | Read a text file inside the workspace |
+| `write_file` | Create or overwrite a file |
+| `edit_file` | Replace an exact text segment in a file |
+| `search_text` | Search workspace files by text or regex |
+| `run_shell` | Run a restricted synchronous shell command |
+| `load_skill` | Load skill instructions or a declared reference |
+
+There is no `list_files` tool. File discovery is handled by `search_text` and restricted `run_shell`.
+
+## Skills
+
+Skills use progressive disclosure:
+
+- Startup scans `skills/*/SKILL.md`.
+- Only `name` and `description` are exposed by default.
+- Full instructions, triggers, and references are returned by `load_skill`.
+- Reference files are loaded only when explicitly requested through `load_skill`.
+
+The repository includes `skills/python-tutor` as an example skill with reference files.
+
+## MCP
+
+v1 supports stdio MCP servers. MCP tools are adapted into the same Tool Registry used by built-in tools.
