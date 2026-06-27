@@ -10,6 +10,7 @@ The project uses the official OpenAI Python SDK with the Chat Completions `/v1/c
 - Chat Completions only.
 - OpenAI-compatible providers such as DeepSeek.
 - Streaming and non-streaming responses.
+- Markdown rendering by default.
 - Claude-Code-style slash commands.
 - Session and persistent memory.
 - Built-in tools for file reading, file writing, exact file edits, text search, synchronous shell commands, and skill loading.
@@ -66,6 +67,7 @@ Common optional config:
 | `base_url` | `MINIAGENT_BASE_URL` | OpenAI SDK default | OpenAI-compatible base URL |
 | `default_language` | `MINIAGENT_DEFAULT_LANGUAGE` | `zh-CN` | Default response language |
 | `stream` | `MINIAGENT_STREAM` | `true` | Stream output by default |
+| `render_markdown` | `MINIAGENT_RENDER_MARKDOWN` | `true` | Render assistant Markdown output |
 | `temperature` | `MINIAGENT_TEMPERATURE` | `0.2` | Sampling temperature |
 | `max_iterations` | `MINIAGENT_MAX_ITERATIONS` | `8` | Max loop iterations per task |
 | `workspace_root` | `MINIAGENT_WORKSPACE` | current directory | Tool workspace |
@@ -81,6 +83,7 @@ Common optional config:
 ```bash
 miniagent
 miniagent --language en
+miniagent --no-markdown
 miniagent run "Explain this project"
 miniagent config show
 miniagent tools list
@@ -107,9 +110,13 @@ Interactive slash commands:
 /new
 /stream on
 /stream off
+/markdown on
+/markdown off
 ```
 
 `default_language` controls the default answer language. The model should follow explicit per-turn language requests from the user, while code, commands, file paths, and tool output stay unchanged unless translation is requested.
+
+Assistant replies are rendered as Markdown with Rich by default. Streaming mode refreshes one Markdown panel; use `/markdown off` or `--no-markdown` to inspect raw Markdown.
 
 ## Tools
 

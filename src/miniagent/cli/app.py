@@ -41,6 +41,7 @@ def _agent_from_options(
     model: Optional[str],
     language: Optional[str],
     stream: Optional[bool],
+    markdown: Optional[bool],
     workspace: Optional[Path],
 ):
     """Build an agent and console from shared CLI options."""
@@ -56,6 +57,7 @@ def _agent_from_options(
             "model": model,
             "default_language": language,
             "stream": stream,
+            "render_markdown": markdown,
             "workspace_root": workspace,
         },
     )
@@ -72,6 +74,7 @@ def chat(
     model: Optional[str] = typer.Option(None, "--model", help="Chat Completions model name."),
     language: Optional[str] = typer.Option(None, "--language", help="Default response language, such as zh-CN or en."),
     stream: Optional[bool] = typer.Option(None, "--stream/--no-stream", help="Enable streaming output."),
+    markdown: Optional[bool] = typer.Option(None, "--markdown/--no-markdown", help="Render assistant Markdown output."),
     workspace: Optional[Path] = typer.Option(None, "--workspace", help="Workspace root."),
 ) -> None:
     """Start interactive chat when no subcommand is provided."""
@@ -80,7 +83,7 @@ def chat(
         return
     from miniagent.cli.repl import run_repl
 
-    agent, console = _agent_from_options(config, api_key, base_url, model, language, stream, workspace)
+    agent, console = _agent_from_options(config, api_key, base_url, model, language, stream, markdown, workspace)
     run_repl(agent, console)
 
 
@@ -93,16 +96,18 @@ def run(
     model: Optional[str] = typer.Option(None, "--model"),
     language: Optional[str] = typer.Option(None, "--language"),
     stream: Optional[bool] = typer.Option(None, "--stream/--no-stream"),
+    markdown: Optional[bool] = typer.Option(None, "--markdown/--no-markdown"),
     workspace: Optional[Path] = typer.Option(None, "--workspace"),
 ) -> None:
     """Run one task and exit."""
 
-    agent, console = _agent_from_options(config, api_key, base_url, model, language, stream, workspace)
-    text = agent.run(task, on_delta=console.write if agent.runtime.config.stream else None)
+    agent, console = _agent_from_options(config, api_key, base_url, model, language, stream, markdown, workspace)
     if agent.runtime.config.stream:
-        console.print("")
+        with console.markdown_stream(agent.runtime.config.render_markdown) as stream_output:
+            agent.run(task, on_delta=stream_output.write)
     else:
-        console.print(text)
+        text = agent.run(task)
+        console.render_assistant(text, agent.runtime.config.render_markdown)
 
 
 @config_app.command("show")

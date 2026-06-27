@@ -27,7 +27,7 @@ def handle_slash_command(text: str, agent: Agent, console) -> CommandResult:
     if command == "/help":
         console.print(
             "/help /exit /clear /model /model <name> /language /language <code> "
-            "/config /tools /skills /mcp /memory /save /new /stream on|off"
+            "/config /tools /skills /mcp /memory /save /new /stream on|off /markdown on|off"
         )
         return CommandResult(handled=True)
     if command == "/clear":
@@ -53,6 +53,11 @@ def handle_slash_command(text: str, agent: Agent, console) -> CommandResult:
             agent.runtime.config = agent.runtime.config.with_updates(default_language=args[0])
         console.print(f"Default language: {agent.runtime.config.default_language}")
         return CommandResult(handled=True)
+    if command == "/markdown":
+        if args and args[0] in {"on", "off"}:
+            agent.runtime.config = agent.runtime.config.with_updates(render_markdown=args[0] == "on")
+        console.print(f"Markdown rendering: {agent.runtime.config.render_markdown}")
+        return CommandResult(handled=True)
     if command == "/config":
         config = agent.runtime.config
         rows = [
@@ -60,6 +65,7 @@ def handle_slash_command(text: str, agent: Agent, console) -> CommandResult:
             ("base_url", config.base_url or "OpenAI default"),
             ("default_language", config.default_language),
             ("stream", str(config.stream)),
+            ("render_markdown", str(config.render_markdown)),
             ("workspace_root", str(config.workspace_root)),
             ("skills_dir", str(config.skills_dir)),
             ("mcp_enabled", str(config.mcp_enabled)),

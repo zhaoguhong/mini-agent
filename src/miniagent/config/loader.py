@@ -55,6 +55,7 @@ def _env_values(env: Mapping[str, str]) -> Dict[str, Any]:
 
     bools = {
         "MINIAGENT_STREAM": "stream",
+        "MINIAGENT_RENDER_MARKDOWN": "render_markdown",
         "MINIAGENT_SHELL_ENABLED": "shell_enabled",
         "MINIAGENT_REQUIRE_SHELL_CONFIRMATION": "require_shell_confirmation",
         "MINIAGENT_MCP_ENABLED": "mcp_enabled",
@@ -100,6 +101,7 @@ def _normalize_values(values: Dict[str, Any]) -> Dict[str, Any]:
             normalized[key] = _path(normalized[key])
     for key in [
         "stream",
+        "render_markdown",
         "shell_enabled",
         "require_shell_confirmation",
         "file_write_confirmation",

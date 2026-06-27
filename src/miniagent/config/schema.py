@@ -27,6 +27,7 @@ class AgentConfig:
     base_url: Optional[str] = None
     default_language: str = "zh-CN"
     stream: bool = True
+    render_markdown: bool = True
     temperature: float = 0.2
     max_iterations: int = 8
     workspace_root: Path = field(default_factory=Path.cwd)

@@ -10,6 +10,7 @@
 - 只调用 `/v1/chat/completions`，不使用 Responses API。
 - 支持 OpenAI 兼容服务，例如 DeepSeek。
 - 支持流式和非流式响应。
+- 默认渲染 Markdown 回复。
 - 支持 `/` 开头的交互命令。
 - 支持 Session Memory 和 Persistent Memory。
 - 支持内置工具：读文件、写文件、局部编辑、文本搜索、同步 Shell、加载 Skill。
@@ -66,6 +67,7 @@ CLI 参数 > 环境变量 > 配置文件 > 默认值
 | `base_url` | `MINIAGENT_BASE_URL` | OpenAI SDK 默认值 | OpenAI 兼容 API 地址 |
 | `default_language` | `MINIAGENT_DEFAULT_LANGUAGE` | `zh-CN` | 默认回答语言 |
 | `stream` | `MINIAGENT_STREAM` | `true` | 是否默认流式输出 |
+| `render_markdown` | `MINIAGENT_RENDER_MARKDOWN` | `true` | 是否渲染助手回复中的 Markdown |
 | `temperature` | `MINIAGENT_TEMPERATURE` | `0.2` | 采样温度 |
 | `max_iterations` | `MINIAGENT_MAX_ITERATIONS` | `8` | 单次请求最大 Agent Loop 次数 |
 | `workspace_root` | `MINIAGENT_WORKSPACE` | 当前目录 | 文件和 Shell 工具工作区 |
@@ -84,6 +86,7 @@ export MINIAGENT_MODEL="deepseek-v4-pro"
 export MINIAGENT_API_KEY="..."
 miniagent
 miniagent --language en
+miniagent --no-markdown
 ```
 
 不要把真实 API key 写入仓库。
@@ -130,6 +133,8 @@ miniagent mcp list
 /new
 /stream on
 /stream off
+/markdown on
+/markdown off
 ```
 
 ## Agent Loop
@@ -147,6 +152,8 @@ miniagent mcp list
 流式模式下，普通文本会边生成边输出；流式 tool calls 会先累积完整参数，再执行工具。
 
 默认回答语言由 `default_language` 控制，默认是 `zh-CN`。模型会优先遵循用户在当前消息中的明确语言要求；代码、命令、文件路径和工具输出默认保持原样。
+
+助手回复默认使用 Rich 渲染 Markdown。流式模式下会刷新同一个 Markdown 面板；如果需要查看原始 Markdown，可以使用 `/markdown off` 或 `--no-markdown`。
 
 ## Tool 加载逻辑
 

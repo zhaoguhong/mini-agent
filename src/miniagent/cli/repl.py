@@ -9,10 +9,10 @@ from miniagent.cli.commands import handle_slash_command
 def run_repl(agent: Agent, console) -> None:
     """Run an interactive miniagent session."""
 
-    console.print("miniagent interactive session. Type /help for commands.")
+    console.intro()
     while True:
         try:
-            text = input("You > ")
+            text = console.input("You")
         except (EOFError, KeyboardInterrupt):
             console.print("")
             return
@@ -25,9 +25,11 @@ def run_repl(agent: Agent, console) -> None:
             if result.handled:
                 continue
         try:
-            agent.run(text, on_delta=console.write if agent.runtime.config.stream else None)
             if agent.runtime.config.stream:
-                console.print("")
+                with console.markdown_stream(agent.runtime.config.render_markdown) as stream:
+                    agent.run(text, on_delta=stream.write)
+            else:
+                answer = agent.run(text)
+                console.render_assistant(answer, agent.runtime.config.render_markdown)
         except Exception as exc:
             console.print(f"Error: {exc}")
-
