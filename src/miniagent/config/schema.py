@@ -39,7 +39,6 @@ class AgentConfig:
     shell_timeout: int = 60
     shell_enabled: bool = True
     require_shell_confirmation: bool = False
-    file_write_confirmation: bool = True
     max_tool_output_chars: int = 20000
     max_file_read_chars: int = 200000
     max_loaded_skills: int = 3

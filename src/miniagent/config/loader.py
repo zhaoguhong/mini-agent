@@ -104,7 +104,6 @@ def _normalize_values(values: Dict[str, Any]) -> Dict[str, Any]:
         "render_markdown",
         "shell_enabled",
         "require_shell_confirmation",
-        "file_write_confirmation",
         "mcp_enabled",
     ]:
         if key in normalized and normalized[key] is not None:

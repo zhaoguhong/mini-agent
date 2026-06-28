@@ -133,7 +133,7 @@ Built-in tools are small enough to be registered and exposed by default:
 
 There is no `list_files` tool. File discovery is handled by `search_text` and restricted `run_shell`.
 
-File writes and edits ask for confirmation by default. The shell tool allows common read-only commands without confirmation; commands that modify files, change Git state, install dependencies, or execute network scripts ask for confirmation; clearly dangerous commands are denied. Without a confirmation callback, sensitive shell commands are denied.
+File writes and edits do not ask for confirmation, but they are always limited to `workspace_root`. The shell tool allows common read-only commands without confirmation; commands that modify files, change Git state, install dependencies, or execute network scripts ask for confirmation; clearly dangerous commands are denied. Without a confirmation callback, sensitive shell commands are denied.
 
 ## Skills
 

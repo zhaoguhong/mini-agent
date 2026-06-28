@@ -4,7 +4,7 @@ from pathlib import Path
 
 from miniagent.config.schema import AgentConfig
 from miniagent.tools.base import ToolContext
-from miniagent.tools.files import EditFileTool, ReadFileTool, SearchTextTool
+from miniagent.tools.files import EditFileTool, ReadFileTool, SearchTextTool, WriteFileTool
 from miniagent.tools.shell import RunShellTool
 
 
@@ -26,15 +26,44 @@ class ToolTests(unittest.TestCase):
             path = tmp_path / "note.md"
             path.write_text("hello old world", encoding="utf-8")
             tool = EditFileTool()
-            config = AgentConfig(workspace_root=tmp_path, file_write_confirmation=True)
+            config = AgentConfig(workspace_root=tmp_path)
 
             result = tool.run(
                 {"path": "note.md", "old_text": "old", "new_text": "new"},
-                ToolContext(config=config, extras={"confirm": lambda prompt: True}),
+                ToolContext(config=config),
             )
 
             self.assertTrue(result.ok)
             self.assertEqual(path.read_text(encoding="utf-8"), "hello new world")
+
+    def test_write_file_creates_workspace_file(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            path = tmp_path / "note.md"
+            tool = WriteFileTool()
+            config = AgentConfig(workspace_root=tmp_path)
+
+            result = tool.run(
+                {"path": "note.md", "content": "hello"},
+                ToolContext(config=config),
+            )
+
+            self.assertTrue(result.ok)
+            self.assertEqual(path.read_text(encoding="utf-8"), "hello")
+
+    def test_write_file_rejects_outside_workspace(self):
+        with tempfile.TemporaryDirectory() as raw:
+            tmp_path = Path(raw)
+            tool = WriteFileTool()
+            config = AgentConfig(workspace_root=tmp_path)
+
+            result = tool.run(
+                {"path": "../note.md", "content": "hello"},
+                ToolContext(config=config),
+            )
+
+            self.assertFalse(result.ok)
+            self.assertIn("outside workspace", result.error)
 
     def test_search_text_finds_match(self):
         with tempfile.TemporaryDirectory() as raw:

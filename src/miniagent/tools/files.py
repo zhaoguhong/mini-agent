@@ -55,8 +55,6 @@ class WriteFileTool:
 
         try:
             path = resolve_workspace_path(context.config.workspace_root, arguments["path"])
-            if context.config.file_write_confirmation and not _confirm(context, f"Write file {path}?"):
-                return ToolResult(ok=False, content="", error="File write denied")
             ensure_dir(path.parent)
             path.write_text(arguments["content"], encoding="utf-8")
             return ToolResult(ok=True, content=f"Wrote {path}", metadata={"path": str(path)})
@@ -96,8 +94,6 @@ class EditFileTool:
 
         try:
             path = resolve_workspace_path(context.config.workspace_root, arguments["path"])
-            if context.config.file_write_confirmation and not _confirm(context, f"Edit file {path}?"):
-                return ToolResult(ok=False, content="", error="File edit denied")
             text = path.read_text(encoding="utf-8")
             old_text = arguments["old_text"]
             new_text = arguments["new_text"]
@@ -166,10 +162,3 @@ class SearchTextTool:
 def _skip_file(path: Path) -> bool:
     ignored = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
     return any(part in ignored for part in path.parts)
-
-
-def _confirm(context: ToolContext, prompt: str) -> bool:
-    callback = context.extras.get("confirm")
-    if callback is None:
-        return False
-    return bool(callback(prompt))
