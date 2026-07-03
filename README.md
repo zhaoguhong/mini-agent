@@ -166,7 +166,7 @@ miniagent mcp list
 | `edit_file` | 精确替换已有文件中的一段文本 |
 | `search_text` | 在工作区搜索文本或正则 |
 | `run_shell` | 同步执行受限 Shell 命令 |
-| `load_skill` | 按需加载 Skill 正文或引用文件 |
+| `load_skill` | 按需加载 Skill 正文或资源文件 |
 
 不提供 `list_files`。文件探索通过 `search_text` 和受限 `run_shell` 完成。
 
@@ -178,10 +178,10 @@ Skill 是渐进式披露：
 
 - 启动时只扫描 `skills/*/SKILL.md`。
 - 默认只向模型暴露 `name` 和 `description`。
-- 不默认注入正文、`triggers` 或 `references`。
+- 不默认注入正文或资源文件内容。
 - 模型判断 Skill 可能有用时，调用 `load_skill`。
-- 第一次 `load_skill` 返回 metadata、正文和引用文件列表。
-- 需要示例或补充资料时，再调用 `load_skill` 加载指定 reference。
+- 第一次 `load_skill` 返回 metadata、正文和可用资源文件列表。
+- 需要示例或补充资料时，再调用 `load_skill` 加载指定 `resource`。
 
 示例 Skill 位于：
 
@@ -193,7 +193,7 @@ skills/python-tutor/
     └── code-review-checklist.md
 ```
 
-引用文件必须位于对应 Skill 目录内，不能通过 `../` 访问外部路径。
+资源文件会从 `references/`、`reference/`、`docs/`、`examples/`、`assets/`、`resources/`、`templates/`、`snippets/` 自动发现。加载资源时必须传 `available resources` 中展示的完整相对路径，不能通过 `../` 访问外部路径。
 
 ## MCP
 

@@ -9,22 +9,23 @@ from miniagent.tools.base import ToolContext, ToolResult
 
 
 class LoadSkillTool:
-    """Tool for progressive disclosure of local skill content.
+    """Tool for progressive disclosure of local skill content and resources.
 
     The model initially sees only skill names and descriptions. Calling this
-    tool is the explicit step that brings full instructions, triggers, and
-    declared reference files into the conversation.
+    tool is the explicit step that brings full instructions and discovered
+    resource paths into the conversation. Resource content is loaded only when
+    requested by full relative path.
     """
 
     name = "load_skill"
-    description = "Load a local skill's full instructions, metadata, or a declared reference file."
+    description = "Load a local skill's instructions or an optional resource file."
     parameters_schema = {
         "type": "object",
         "properties": {
             "name": {"type": "string"},
-            "reference": {
+            "resource": {
                 "type": "string",
-                "description": "Optional declared reference path to load from the skill directory.",
+                "description": "Optional full resource path from the skill's available resources list.",
             },
         },
         "required": ["name"],
@@ -35,21 +36,25 @@ class LoadSkillTool:
         self.repository = repository
 
     def run(self, arguments: Dict[str, Any], context: ToolContext) -> ToolResult:
-        """Load skill instructions first, then optional declared references.
+        """Load skill instructions first, then optional resource files.
 
-        A call without `reference` returns the full skill metadata and primary
-        instructions. A call with `reference` returns only that declared file, so
-        large examples stay out of context until the model asks for them.
+        A call without `resource` returns the full skill metadata, available
+        resource paths, and primary instructions. A call with `resource` returns
+        only that file, so large examples stay out of context until the model
+        asks for them.
         """
 
         try:
+            unexpected = sorted(set(arguments) - {"name", "resource"})
+            if unexpected:
+                raise ValueError(f"Unexpected load_skill argument(s): {', '.join(unexpected)}")
             name = arguments["name"]
-            reference = arguments.get("reference")
-            if reference:
-                content = self.repository.load_reference(name, reference)
+            resource = arguments.get("resource")
+            if resource:
+                content = self.repository.load_resource(name, resource)
                 if len(content) > context.config.max_file_read_chars:
                     content = content[: context.config.max_file_read_chars] + "\n...[truncated]"
-                return ToolResult(ok=True, content=content, metadata={"skill": name, "reference": reference})
+                return ToolResult(ok=True, content=content, metadata={"skill": name, "resource": resource})
 
             skill = self.repository.get(name)
             context.extras.setdefault("loaded_skills", set()).add(name)
@@ -59,16 +64,14 @@ class LoadSkillTool:
                 [
                     f"name: {skill.name}",
                     f"description: {skill.description}",
-                    "triggers:",
-                    *[f"- {item}" for item in skill.triggers],
-                    "references:",
-                    *[f"- {item}" for item in skill.references],
+                    "available resources:",
+                    *[f"- {item}" for item in skill.resources],
                     "",
                     skill.instructions,
                 ]
             )
             if len(content) > context.config.max_tool_output_chars:
                 content = content[: context.config.max_tool_output_chars] + "\n...[truncated]"
-            return ToolResult(ok=True, content=content, metadata={"skill": name, "references": skill.references})
+            return ToolResult(ok=True, content=content, metadata={"skill": name, "resources": skill.resources})
         except Exception as exc:
             return ToolResult(ok=False, content="", error=str(exc))

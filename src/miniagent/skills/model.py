@@ -17,15 +17,13 @@ class SkillIndexItem:
 
 @dataclass(frozen=True)
 class Skill:
-    """A local skill backed by SKILL.md and optional references."""
+    """A local skill backed by SKILL.md and optional resource files."""
 
     name: str
     description: str
-    triggers: List[str]
-    references: List[str]
+    resources: List[str]
     instructions: str
     root: Path
-    source_path: Path
 
     def index_item(self) -> SkillIndexItem:
         """Return the minimal model-visible representation."""

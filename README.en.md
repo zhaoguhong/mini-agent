@@ -129,7 +129,7 @@ Built-in tools are small enough to be registered and exposed by default:
 | `edit_file` | Replace an exact text segment in a file |
 | `search_text` | Search workspace files by text or regex |
 | `run_shell` | Run a restricted synchronous shell command |
-| `load_skill` | Load skill instructions or a declared reference |
+| `load_skill` | Load skill instructions or a resource file |
 
 There is no `list_files` tool. File discovery is handled by `search_text` and restricted `run_shell`.
 
@@ -141,10 +141,12 @@ Skills use progressive disclosure:
 
 - Startup scans `skills/*/SKILL.md`.
 - Only `name` and `description` are exposed by default.
-- Full instructions, triggers, and references are returned by `load_skill`.
-- Reference files are loaded only when explicitly requested through `load_skill`.
+- Full instructions and available resource paths are returned by `load_skill`.
+- Resource files are loaded only when explicitly requested through `load_skill` with `resource`.
 
-The repository includes `skills/python-tutor` as an example skill with reference files.
+Resources are discovered from `references/`, `reference/`, `docs/`, `examples/`, `assets/`, `resources/`, `templates/`, and `snippets/`. A resource request must use the full relative path shown in `available resources`.
+
+The repository includes `skills/python-tutor` as an example skill with resource files.
 
 ## MCP
 

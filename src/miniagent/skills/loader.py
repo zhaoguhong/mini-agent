@@ -7,13 +7,28 @@ called by the model.
 
 from __future__ import annotations
 
+import logging
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from miniagent.skills.model import Skill, SkillIndexItem
 
+logger = logging.getLogger(__name__)
+
 FRONT_MATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.DOTALL)
+RESOURCE_DIR_NAMES = (
+    "references",
+    "reference",
+    "docs",
+    "examples",
+    "assets",
+    "resources",
+    "templates",
+    "snippets",
+)
+MAX_SKILL_RESOURCES = 100
+MAX_RESOURCE_PATH_CHARS = 512
 
 
 class SkillRepository:
@@ -51,22 +66,21 @@ class SkillRepository:
         except KeyError as exc:
             raise KeyError(f"Unknown skill: {name}") from exc
 
-    def load_reference(self, name: str, reference: str) -> str:
-        """Load a declared reference file from inside a skill directory.
+    def load_resource(self, name: str, resource: str) -> str:
+        """Load an available resource file from inside a skill resource directory.
 
-        References must be listed by the skill and must resolve under that
-        skill's root directory. This prevents a skill from using references as a
-        path traversal mechanism.
+        Resources are discovered from known resource directories and must be
+        requested by their full relative path. This keeps loading explicit while
+        preventing path traversal outside the skill's resource directories.
         """
 
         skill = self.get(name)
-        if reference not in skill.references:
-            raise ValueError(f"Reference is not declared by skill: {reference}")
-        path = (skill.root / reference).resolve()
-        try:
-            path.relative_to(skill.root.resolve())
-        except ValueError as exc:
-            raise ValueError("Reference path escapes skill directory") from exc
+        if resource not in skill.resources:
+            raise ValueError(f"Resource is not available for skill: {resource}")
+        path = (skill.root / resource).resolve()
+        allowed_roots = [(skill.root / dirname).resolve() for dirname in RESOURCE_DIR_NAMES]
+        if not any(_is_relative_to(path, root) for root in allowed_roots):
+            raise ValueError("Resource path escapes skill resource directories")
         return path.read_text(encoding="utf-8")
 
     def _load_skill_file(self, path: Path) -> Skill:
@@ -74,16 +88,13 @@ class SkillRepository:
         metadata, body = _split_front_matter(raw)
         name = str(metadata.get("name") or path.parent.name)
         description = str(metadata.get("description") or "")
-        triggers = _list(metadata.get("triggers"))
-        references = _list(metadata.get("references"))
+        resources = _discover_resources(path.parent)
         return Skill(
             name=name,
             description=description,
-            triggers=triggers,
-            references=references,
+            resources=resources,
             instructions=body.strip(),
             root=path.parent,
-            source_path=path,
         )
 
 
@@ -125,11 +136,49 @@ def _parse_simple_yaml(raw: str) -> Dict[str, Any]:
     return result
 
 
-def _list(value: Any) -> List[str]:
-    """Normalize scalar or list metadata into a list of strings."""
+def _discover_resources(skill_root: Path) -> List[str]:
+    """Return resource files discovered under known resource directories."""
 
-    if not value:
-        return []
-    if isinstance(value, list):
-        return [str(item) for item in value]
-    return [str(value)]
+    resources: List[str] = []
+    for dirname in RESOURCE_DIR_NAMES:
+        resource_dir = skill_root / dirname
+        if not resource_dir.exists() or not resource_dir.is_dir() or resource_dir.is_symlink():
+            continue
+        for path in resource_dir.rglob("*"):
+            if not path.is_file() or path.is_symlink():
+                continue
+            relative = path.relative_to(skill_root)
+            if _should_skip_resource(relative):
+                continue
+            resource = relative.as_posix()
+            if len(resource) > MAX_RESOURCE_PATH_CHARS:
+                logger.warning(
+                    "Skipping skill resource with overlong path: skill_root=%s resource=%s max_chars=%s",
+                    skill_root,
+                    resource,
+                    MAX_RESOURCE_PATH_CHARS,
+                )
+                continue
+            resources.append(resource)
+            if len(resources) >= MAX_SKILL_RESOURCES:
+                logger.warning(
+                    "Reached skill resource limit: skill_root=%s max_resources=%s",
+                    skill_root,
+                    MAX_SKILL_RESOURCES,
+                )
+                return sorted(resources)
+    return sorted(resources)
+
+
+def _should_skip_resource(relative: Path) -> bool:
+    """Return True when a resource path should stay hidden from skill loading."""
+
+    return any(part.startswith(".") or part == "__pycache__" for part in relative.parts)
+
+
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+        return True
+    except ValueError:
+        return False
