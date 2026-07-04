@@ -46,12 +46,12 @@ class SkillRepository:
     def discover(self) -> None:
         """Scan the skills directory and refresh the in-memory index."""
 
-        self._skills = {}
-        if not self.skills_dir.exists():
-            return
-        for path in sorted(self.skills_dir.glob("*/SKILL.md")):
-            skill = self._load_skill_file(path)
-            self._skills[skill.name] = skill
+        skills: Dict[str, Skill] = {}
+        if self.skills_dir.exists():
+            for path in sorted(self.skills_dir.glob("*/SKILL.md")):
+                skill = self._load_skill_file(path)
+                skills[skill.name] = skill
+        self._skills = skills
 
     def index(self) -> List[SkillIndexItem]:
         """Return the minimal skill index exposed to the model."""
