@@ -57,7 +57,7 @@ Python 3.10 or newer is required. Python 3.12 is recommended.
 git clone <your-repository-url>
 cd mini-agent
 
-python3.12 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 ```
@@ -68,17 +68,7 @@ Activate the virtual environment in Windows PowerShell with:
 .venv\Scripts\Activate.ps1
 ```
 
-### 2. Configure a Model
-
-At minimum, set an API key and model name:
-
-```bash
-export MINIAGENT_API_KEY="your-api-key"
-export MINIAGENT_MODEL="your-model-name"
-```
-
-If you use a service compatible with the Chat Completions protocol, also set its Base URL. For example:
-
+### 2. Configure a Model (any Chat Completions compatible service)
 ```bash
 export MINIAGENT_BASE_URL="https://api.deepseek.com"
 export MINIAGENT_MODEL="your-deepseek-model"
@@ -86,7 +76,6 @@ export MINIAGENT_API_KEY="your-api-key"
 ```
 
 Never put a real API key in source code, documentation examples, or Git commits.
-
 ### 3. Start the Agent
 
 Start an interactive chat:

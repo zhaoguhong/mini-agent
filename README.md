@@ -57,7 +57,7 @@ flowchart TD
 git clone <your-repository-url>
 cd mini-agent
 
-python3.12 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 ```
@@ -68,17 +68,7 @@ Windows PowerShell 激活虚拟环境：
 .venv\Scripts\Activate.ps1
 ```
 
-### 2. 配置模型
-
-至少需要设置 API Key 和模型名：
-
-```bash
-export MINIAGENT_API_KEY="your-api-key"
-export MINIAGENT_MODEL="your-model-name"
-```
-
-如果使用兼容 Chat Completions 协议的服务，再设置 Base URL。例如：
-
+### 2. 配置模型（兼容 Chat Completions 的服务均可）
 ```bash
 export MINIAGENT_BASE_URL="https://api.deepseek.com"
 export MINIAGENT_MODEL="your-deepseek-model"
@@ -86,7 +76,6 @@ export MINIAGENT_API_KEY="your-api-key"
 ```
 
 不要把真实 API Key 写进代码、配置示例或提交到 Git。
-
 ### 3. 启动 Agent
 
 进入交互式对话：
